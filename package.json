@@ -1,6 +1,6 @@
 {
   "name": "node-jeuxvideo-bot-api",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Jeuxvideo.com Bot API",
   "main": "index.js",
   "scripts": {
