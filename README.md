@@ -14,7 +14,7 @@ npm install --save node-jeuxvideo-bot-api
 const JvcBot = require('node-jeuxvideo-bot-api');
 
 const bot = new JvcBot({
-  topicURLWatcher: 'forums/*.html',
+  topicURLWatcher: 'http://www.jeuxvideo.com/forums/42-51-50527051-1-0-1-0-mode-la-dictature-de-la-moderation.htm',
   username: 'MYUSERNAME',
   password: 'MYPASSWORD'
 });
