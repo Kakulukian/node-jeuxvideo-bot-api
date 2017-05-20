@@ -25,7 +25,14 @@ bot.on('ready', () => {
   });
 });
 ```
-
+## Options
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| watchOnly | <code>Boolean</code> | False | True for only watch topics, False permits to post answer|
+| username | <code>String</code> | Empty | Credentials for JVC|
+| password | <code>String</code> | Empty | Credentials for JVC|
+| topicURLWatcher | <code>String</code> | Empty | Topic url to be watched by bot|
+| delayBetweenScrap | <code>Integer</code> | Empty | Delay between scrape in ms|
 ## License
 
 **The MIT License (MIT)**
