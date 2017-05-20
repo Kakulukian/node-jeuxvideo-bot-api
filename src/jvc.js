@@ -58,21 +58,19 @@ class JvcBot extends EventEmitter {
     paths[3] = i;
     const newPath = paths.join('-');
     return this.request(newPath).then((resp) => {
-      try {
-        const $ = cheerio.load(resp, { ignoreWhitespace: true });
-        $('.bloc-message-forum').each(function () {
-          ctx.existingPosts.push($(this).attr('data-id'));
-        });
-        const linkPagination = $('div.bloc-liste-num-page').find('span a');
-        ctx.maxPage = parseInt($(linkPagination[linkPagination.length - 1]).text(), 10) + 1;
-        if (i === ctx.maxPage) {
-          ctx.initScrapeFinished = true;
-          ctx.emit('ready');
+        if(resp){
+          const $ = cheerio.load(resp, { ignoreWhitespace: true });
+          $('.bloc-message-forum').each(function () {
+            ctx.existingPosts.push($(this).attr('data-id'));
+          });
+          const linkPagination = $('div.bloc-liste-num-page').find('span a');
+          ctx.maxPage = parseInt($(linkPagination[linkPagination.length - 1]).text(), 10) + 1;
+          if (i === ctx.maxPage) {
+            ctx.initScrapeFinished = true;
+            ctx.emit('ready');
+          }
+          return resp;          
         }
-        return resp;
-      } catch(err) {
-
-      }
     });
   }
 
@@ -88,21 +86,23 @@ class JvcBot extends EventEmitter {
     paths[3] = i;
     const newPath = paths.join('-');
     return this.request(newPath).then((resp) => {
-      const $ = cheerio.load(resp, { ignoreWhitespace: true });
-      $('.bloc-message-forum').each(function () {
-        if (ctx.existingPosts.indexOf($(this).attr('data-id')) === -1) {
-          const post = {
-            id: $(this).attr('data-id'),
-            message: $(this).find('.txt-msg.text-enrichi-forum').text(),
-            author: $(this).find('.user-avatar-msg').attr('alt')
-          };
-          ctx.emit('message', post);
-          ctx.existingPosts.push(post.id);
-        }
-      });
-      const linkPagination = $('div.bloc-liste-num-page').find('span a');
-      const maxPage = parseInt($(linkPagination[linkPagination.length - 1]).text(), 10) + 1;
-      ctx.maxPage = isNaN(maxPage) ? ctx.maxPage : maxPage;
+      if(resp){
+        const $ = cheerio.load(resp, { ignoreWhitespace: true });
+        $('.bloc-message-forum').each(function () {
+          if (ctx.existingPosts.indexOf($(this).attr('data-id')) === -1) {
+            const post = {
+              id: $(this).attr('data-id'),
+              message: $(this).find('.txt-msg.text-enrichi-forum').text(),
+              author: $(this).find('.user-avatar-msg').attr('alt')
+            };
+            ctx.emit('message', post);
+            ctx.existingPosts.push(post.id);
+          }
+        });
+        const linkPagination = $('div.bloc-liste-num-page').find('span a');
+        const maxPage = parseInt($(linkPagination[linkPagination.length - 1]).text(), 10) + 1;
+        ctx.maxPage = isNaN(maxPage) ? ctx.maxPage : maxPage;
+      }
     }).catch((err) => {
       console.log(err);
     });
@@ -116,19 +116,21 @@ class JvcBot extends EventEmitter {
       const ctx = this;
       this.runningScrape = true;
       this.request(this.options.topicURLWatcher).then((resp) => {
-        const $ = cheerio.load(resp, { ignoreWhitespace: true });        
-        const linkPagination = $('div.bloc-liste-num-page').find('span a');
-        ctx.maxPage = parseInt($(linkPagination[linkPagination.length - 2]).text(), 10);
+        if(resp){
+          const $ = cheerio.load(resp, { ignoreWhitespace: true });        
+          const linkPagination = $('div.bloc-liste-num-page').find('span a');
+          ctx.maxPage = parseInt($(linkPagination[linkPagination.length - 2]).text(), 10);
 
-        if (ctx.maxPage !== 1) {
-          return ctx.retrieveBulkPosts(this.options.topicURLWatcher, ctx.maxPage).then();
+          if (ctx.maxPage !== 1) {
+            return ctx.retrieveBulkPosts(this.options.topicURLWatcher, ctx.maxPage).then();
+          }
+          $('.bloc-message-forum').each(function () {
+            ctx.existingPosts.push($(this).attr('data-id'));
+          });        
+          ctx.initScrapeFinished = true;
+          ctx.emit('ready');
+          return resp;
         }
-        $('.bloc-message-forum').each(function () {
-          ctx.existingPosts.push($(this).attr('data-id'));
-        });        
-        ctx.initScrapeFinished = true;
-        ctx.emit('ready');
-        return resp;
       });
     }
     if (this.initScrapeFinished) {
