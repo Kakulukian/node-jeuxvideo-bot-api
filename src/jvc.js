@@ -70,6 +70,8 @@ class JvcBot extends EventEmitter {
           ctx.emit('ready');
         }
         return resp;
+      } catch(err) {
+
       }
     });
   }
