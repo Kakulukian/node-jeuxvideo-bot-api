@@ -58,17 +58,19 @@ class JvcBot extends EventEmitter {
     paths[3] = i;
     const newPath = paths.join('-');
     return this.request(newPath).then((resp) => {
-      const $ = cheerio.load(resp, { ignoreWhitespace: true });
-      $('.bloc-message-forum').each(function () {
-        ctx.existingPosts.push($(this).attr('data-id'));
-      });
-      const linkPagination = $('div.bloc-liste-num-page').find('span a');
-      ctx.maxPage = parseInt($(linkPagination[linkPagination.length - 1]).text(), 10) + 1;
-      if (i === ctx.maxPage) {
-        ctx.initScrapeFinished = true;
-        ctx.emit('ready');
+      try {
+        const $ = cheerio.load(resp, { ignoreWhitespace: true });
+        $('.bloc-message-forum').each(function () {
+          ctx.existingPosts.push($(this).attr('data-id'));
+        });
+        const linkPagination = $('div.bloc-liste-num-page').find('span a');
+        ctx.maxPage = parseInt($(linkPagination[linkPagination.length - 1]).text(), 10) + 1;
+        if (i === ctx.maxPage) {
+          ctx.initScrapeFinished = true;
+          ctx.emit('ready');
+        }
+        return resp;
       }
-      return resp;
     });
   }
 
