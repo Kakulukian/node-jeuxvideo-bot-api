@@ -4,9 +4,9 @@
   "description": "Jeuxvideo.com Bot API",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "babel -d ./lib src",
-    "eslint": "eslint ./src ./example"
+    "eslint": "eslint ./src ./example",
+    "patch-release": "npm version patch && npm publish && git push --follow-tags"
   },
   "directories": {
     "example": "example"
