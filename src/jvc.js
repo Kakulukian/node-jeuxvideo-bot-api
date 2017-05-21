@@ -17,6 +17,7 @@ class JvcBot extends EventEmitter {
    * @param {Integer} [options.delayBetweenScrap] Delay between to scrape to fetch the last message
    * @param {String} [options.baseApiUrl] Base Api Url
    * @param {String} [options.baseUrl] Base Url
+   * @param {Object} [options.loginFromCookie] JVC Cookies
    */
   constructor(options) {
     super();
@@ -33,6 +34,7 @@ class JvcBot extends EventEmitter {
     this.options.delayBetweenScrap = options.delayBetweenScrap || 10000;
     this.options.baseApiUrl = options.baseApiUrl || 'https://api.jeuxvideo.com/v4/';
     this.options.baseUrl = options.baseUrl || 'https://jeuxvideo.com/';
+    this.options.loginFromCookie = options.loginFromCookie || {};
     this.cookieJar = request.jar();
     this.existingPosts = [];
     this.maxPage = 1;
@@ -89,11 +91,12 @@ class JvcBot extends EventEmitter {
       if(resp){
         const $ = cheerio.load(resp, { ignoreWhitespace: true });
         $('.bloc-message-forum').each(function () {
-          if (ctx.existingPosts.indexOf($(this).attr('data-id')) === -1) {
+          const author = $(this).find('.user-avatar-msg').attr('alt');
+          if (ctx.existingPosts.indexOf($(this).attr('data-id')) === -1 && author !== ctx.username) {
             const post = {
               id: $(this).attr('data-id'),
               message: $(this).find('.txt-msg.text-enrichi-forum').text(),
-              author: $(this).find('.user-avatar-msg').attr('alt')
+              author: author
             };
             ctx.emit('message', post);
             ctx.existingPosts.push(post.id);
@@ -144,9 +147,10 @@ class JvcBot extends EventEmitter {
    * @param  {Object} data to post
    * @return {String} Response
    */
-  request(path, data) {
+  request(path, data = false, forumApi = false) {
     const method = data ? 'POST' : 'GET';
-    const url = `${this.options.baseUrl + path}?${Math.floor(Date.now() / 1000)}`;
+    const baseUrl = forumApi ? 'https://api.jeuxvideo.com/' : this.options.baseUrl;
+    const url = `${ baseUrl + path}?${Math.floor(Date.now() / 1000)}`;
     const options = {
       method,
       url,
@@ -154,7 +158,6 @@ class JvcBot extends EventEmitter {
       followRedirect: true,
       followAllRedirects: true,
       headers: {
-        'User-Agent': 'JeuxVideo-Android/202',
         'Cache-Control': 'no-cache'
       },
       timeout: 1500,
@@ -210,10 +213,15 @@ class JvcBot extends EventEmitter {
    * @return {Promise}
    */
   login() {
+    if(this.options.loginFromCookie.coniunctio){
+        const loginCookie = request.cookie(`coniunctio=${this.options.loginFromCookie.coniunctio}`);
+        this.cookieJar.setCookie(loginCookie, this.options.baseApiUrl.replace('v4/', ''));
+        return Promise.resolve();
+    }
     if (this.options.username && this.options.password) {
       return this.requestAPI('accounts/login', { alias: this.options.username, password: this.options.password }).then(() => {
         return Promise.resolve();
-      });
+      });        
     }
     return Promise.reject('The bot needs your password and login.');
   }
@@ -227,8 +235,7 @@ class JvcBot extends EventEmitter {
     if (this.options.watchOnly) return Promise.reject('Watch mode scope activated. Please remove it.');
     if (!message) return Promise.reject('Need a message.');
     const topicId = this.options.topicURLWatcher.split('-')[2];
-
-    return this.request(`forums/create_message.php?id_topic=${topicId}`).then((resp) => {
+    return this.request(`forums/create_message.php?id_topic=${topicId}`, false, true).then((resp) => {
       const $ = cheerio.load(resp);
       const inputs = $('.form-post-msg').find('input');
       const payload = {};
@@ -236,13 +243,17 @@ class JvcBot extends EventEmitter {
         payload[$(this).attr('name')] = $(this).attr('value');
       });
       payload.message_topic = message;
-      this.request(`forums/create_message.php?id_topic=${topicId}`, payload).then((r) => {
+      this.request(`forums/create_message.php?id_topic=${topicId}`, payload, true).then((r) => {
         if (r.indexOf('Une erreur est survenue') > -1 || r.indexOf('Vous devez vous connecter pour répondre au sujet') > -1) {
-          return Promise.reject('[ERROR] Can\'t post in the topic');
+          return Promise.reject('[ERROR] Can\'t post in the topic, maybe you are not connected ...');
         }
         return Promise.resolve();
       });
     });
+  }
+
+  getCookieJar(){
+    return this.cookieJar;
   }
 }
 
