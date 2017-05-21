@@ -25,6 +25,23 @@ bot.on('ready', () => {
   });
 });
 ```
+
+```js
+const JvcBot = require('node-jeuxvideo-bot-api');
+
+const bot = new JvcBot({
+  topicURLWatcher: 'http://www.jeuxvideo.com/forums/42-51-50527051-1-0-1-0-mode-la-dictature-de-la-moderation.htm',
+  loginFromCookie: {
+    coniunctio: 'myCookieValue'
+  }
+});
+
+bot.on('ready', () => {
+  bot.on('message', (msg) => {
+    bot.sendMessage(`Hello ${msg.author} !`);
+  });
+});
+```
 ## Options
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -33,6 +50,7 @@ bot.on('ready', () => {
 | password | <code>String</code> | Empty | Credentials for JVC|
 | topicURLWatcher | <code>String</code> | Empty | Topic url to be watched by bot|
 | delayBetweenScrap | <code>Integer</code> | Empty | Delay between scrape in ms|
+| loginFromCookie | <code>Object</code> | {} | Connection cookie coniunctio, loginFromCookie.coniunctio: 'value'
 ## License
 
 **The MIT License (MIT)**
