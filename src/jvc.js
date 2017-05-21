@@ -119,8 +119,8 @@ class JvcBot extends EventEmitter {
         if(resp){
           const $ = cheerio.load(resp, { ignoreWhitespace: true });        
           const linkPagination = $('div.bloc-liste-num-page').find('span a');
-          ctx.maxPage = parseInt($(linkPagination[linkPagination.length - 2]).text(), 10);
-
+          const maxPage = parseInt($(linkPagination[linkPagination.length - 2]).text(), 10);
+          ctx.maxPage = isNaN(maxPage) ? 1 : maxPage;
           if (ctx.maxPage !== 1) {
             return ctx.retrieveBulkPosts(this.options.topicURLWatcher, ctx.maxPage).then();
           }
