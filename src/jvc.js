@@ -92,7 +92,7 @@ class JvcBot extends EventEmitter {
         const $ = cheerio.load(resp, { ignoreWhitespace: true });
         $('.bloc-message-forum').each(function () {
           const author = $(this).find('.user-avatar-msg').attr('alt');
-          if (ctx.existingPosts.indexOf($(this).attr('data-id')) === -1 && author !== ctx.username) {
+          if (ctx.existingPosts.indexOf($(this).attr('data-id')) === -1 && author !== ctx.options.username) {
             const post = {
               id: $(this).attr('data-id'),
               message: $(this).find('.txt-msg.text-enrichi-forum').text(),
