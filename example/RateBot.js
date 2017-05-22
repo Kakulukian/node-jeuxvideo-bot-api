@@ -34,6 +34,7 @@ bot.on('ready', () => {
         Robot lancé depuis ${Math.floor(Date.now() / 1000) - launchingTime} secondes. \n
         Commande /info exécutée par ${message.author}. \n
         Pour l'instant, il y a ${users.length} différents utilisateurs qui ont posté sur le topic. \n
+        Messages traités : ${messageProcessed} \n
         Bisous \n
         ----------------------`);
     } else if (message.message.toLowerCase().indexOf(command[1]) > -1) {
@@ -49,8 +50,10 @@ bot.on('ready', () => {
         userRating[message.author].count++;
         recurrentMessage += `${message.author} :d) Revoilà ta note : ${userRating[message.author].rating} / 10 :noel: \n`;
       } else {
-        userRating[message.author].rating = rating;
-        userRating[message.author].count = 0;
+        userRating[message.author] = {
+          rating,
+          count: 0
+        };
         recurrentMessage += `${message.author} :d) ${rating} / 10 \n`;
       }
     }
