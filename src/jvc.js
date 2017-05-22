@@ -145,7 +145,8 @@ class JvcBot extends EventEmitter {
   startPolling() {
     if (this.messageQueue.length > 0) {
       debug('[INFO] Message queue processed by routine.');
-      const message = this.messageQueue.pop();
+      const message = this.messageQueue.shift();
+      debug('[INFO] Still %D messages in queue', this.getQueueLength());
       this.sendMessage(message.message, message.topicId);
     }
     if (!this.initScrapeFinished && !this.runningScrape) {
