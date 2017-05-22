@@ -4,8 +4,8 @@
   "description": "Jeuxvideo.com Bot API",
   "main": "index.js",
   "scripts": {
+    "eslint": "eslint ./src ./example --fix",
     "build": "babel -d ./lib src",
-    "eslint": "eslint ./src ./example",
     "patch-release": "npm version patch && npm publish && git push --follow-tags"
   },
   "directories": {
@@ -26,6 +26,7 @@
     "bluebird": "^3.3.4",
     "cheerio": "^0.22.0",
     "crypto": "0.0.3",
+    "debug": "^2.6.8",
     "eventemitter3": "^2.0.2",
     "moment": "^2.18.1",
     "request": "^2.69.0",
