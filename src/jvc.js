@@ -143,6 +143,11 @@ class JvcBot extends EventEmitter {
    * startPolling permits to run the bot
    */
   startPolling() {
+    if (this.messageQueue.length > 0) {
+      debug('[INFO] Message queue processed by routine.');
+      const message = this.messageQueue.pop();
+      this.sendMessage(message.message, message.topicId);
+    }
     if (!this.initScrapeFinished && !this.runningScrape) {
       const ctx = this;
       this.runningScrape = true;
@@ -171,11 +176,7 @@ class JvcBot extends EventEmitter {
     if (this.initScrapeFinished) {
       this.retrievePost(this.options.topicURLWatcher, this.maxPage).then();
     }
-    if (this.messageQueue.length > 0) {
-      debug('[INFO] Message queue processed by routine.');
-      const message = this.messageQueue.pop();
-      return this.sendMessage(message.message, message.topicId);
-    }
+
   }
 
   /**
@@ -287,7 +288,7 @@ class JvcBot extends EventEmitter {
         payload.message_topic = message;
         return this.request(`forums/create_message.php?id_topic=${topicId}`, payload, true).then((r) => {
           if (r) {
-            if (r.toLowerCase().indexOf('erreur') > -1 || r.indexOf('Une erreur est survenue') > -1 ||
+            if (r.indexOf('Le captcha est incorrect') > -1 || r.indexOf('Une erreur est survenue') > -1 ||
                 r.indexOf('Vous devez vous connecter pour répondre au sujet') > -1) {
               ctx.messageQueue.push({ message, topicId });
               return Promise.reject('[ERROR] Post in the topic. Reason : maybe you are not connected or delay between two post is too small ...');
