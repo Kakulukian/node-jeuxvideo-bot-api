@@ -23,29 +23,48 @@ class JvcBot extends EventEmitter {
   constructor(options) {
     super();
     this.options = {};
+    this.options.mode = (options.mode) || 'topic';
     this.options.watchOnly = (options.watchOnly) ? options.watchOnly : false;
     this.options.username = options.username || '';
     this.options.password = options.password || '';
-    this.options.topicURLWatcher = options.topicURLWatcher || '';
+    this.options.forumURLWatcher = (options.mode === 'forum') ? options.forumURLWatcher : '';
+    this.options.topicURLWatcher = (options.mode === 'topic') ? options.topicURLWatcher : '';
     this.options.topicURLWatcher = this.options.topicURLWatcher.split('/').filter(function (elt, i) {
       if (i > 2) {
         return elt;
       }
       return '';
     }).join('/');
+    this.options.forumURLWatcher = this.options.forumURLWatcher.split('/').filter(function (elt, i) {
+      if (i > 2) {
+        return elt;
+      }
+      return '';
+    }).join('/');
     this.options.delayBetweenScrap = options.delayBetweenScrap || 10000;
-    this.options.baseApiUrl = options.baseApiUrl || 'https://api.jeuxvideo.com/v4/';
-    this.options.baseUrl = options.baseUrl || 'https://jeuxvideo.com/';
+    this.options.baseApiUrl = 'https://api.jeuxvideo.com/v4/';
+    this.options.baseUrl = 'https://jeuxvideo.com/';
     this.options.loginFromCookie = options.loginFromCookie || {};
     this.cookieJar = request.jar();
     this.existingPosts = [];
+    this.existingTopics = [];
     this.maxPage = 1;
     this.runningScrape = false;
     this.initScrapeFinished = false;
     this.messageQueue = [];
-    this.startPolling();
+    if(this.options.mode === 'forum') {
+      this.startPollingForum();
+    } else {
+      this.startPollingTopic();
+    }
     const ctx = this;
-    this.intervalPolling = setInterval(() => { ctx.startPolling(); }, this.options.delayBetweenScrap);
+    this.intervalPolling = setInterval(() => {
+      if(ctx.options.mode === 'forum') {
+        ctx.startPollingForum();
+      } else {
+        ctx.startPollingTopic();
+      }
+    }, this.options.delayBetweenScrap);
     if (!this.options.watchOnly) {
       this.login();
     }
@@ -135,20 +154,77 @@ class JvcBot extends EventEmitter {
       debug('[WARN] Crawl fails : %s', newPath);
       return Promise.reject();
     }).catch((err) => {
+      Promise.reject(err.response);
+    });
+  }
+
+  retrieveTopic() {
+    const ctx = this;
+    return this.request(this.options.forumURLWatcher).then((resp) => {
+      if (resp) {
+        const $ = cheerio.load(resp, { ignoreWhitespace: true });
+        $('li[data-id]').each(function () {
+          if (ctx.existingTopics.indexOf($(this).attr('data-id')) === -1) {
+            const subject = $(this).find('.lien-jv.topic-title');
+            const topic = {
+              id: $(this).attr('data-id'),
+              count: parseInt($(this).find('.topic-count').text()),
+              subject: subject.attr('title'),
+              author: $(this).find('.topic-author').text().replace(/ /g, ''),
+              url: subject.attr('href')
+            };
+            ctx.emit('topic', topic);
+            ctx.existingTopics.push(topic.id);
+          }
+        });
+        return Promise.resolve();
+      }
+      debug('[WARN] Crawl fails : %s', this.options.forumURLWatcher);
+      return Promise.reject();
+    }).catch((err) => {
       Promise.reject(err);
     });
   }
 
-  /**
-   * startPolling permits to run the bot
-   */
-  startPolling() {
+  cleanMessageQueue() {
     if (this.messageQueue.length > 0) {
       debug('[INFO] Message queue processed by routine.');
       const message = this.messageQueue.shift();
       debug('[INFO] Still %d messages in queue', this.getQueueLength());
       this.sendMessage(message.message, message.topicId);
     }
+  }
+
+  startPollingForum() {
+    this.cleanMessageQueue();
+    if (!this.initScrapeFinished && !this.runningScrape) {
+      this.runningScrape = true;
+      const ctx = this;
+      this.request(this.options.forumURLWatcher).then((resp) => {
+        if (resp) {
+          const $ = cheerio.load(resp, { ignoreWhitespace: true });
+          $('li[data-id]').each(function() {
+            ctx.existingTopics.push($(this).attr('data-id'))
+          });
+          ctx.initScrapeFinished = true;
+          ctx.emit('ready');
+          return Promise.resolve();
+        }
+        debug('[WARN] First crawl fails : %s', ctx.options.forumURLWatcher);
+        this.runningScrape = false;
+        return Promise.reject();
+      });
+    }
+    if(this.initScrapeFinished) {
+      this.retrieveTopic();
+    }
+  }
+
+  /**
+   * startPollingTopic permits to run the bot on topic
+   */
+  startPollingTopic() {
+    this.cleanMessageQueue();
     if (!this.initScrapeFinished && !this.runningScrape) {
       const ctx = this;
       this.runningScrape = true;
@@ -162,7 +238,7 @@ class JvcBot extends EventEmitter {
             debug('[INFO] There are %d pages.', ctx.maxPage);
             return ctx.retrieveBulkPosts(this.options.topicURLWatcher, ctx.maxPage).then();
           }
-          $('.bloc-message-forum').each(function () {
+          $('.bloc-message-forum').each(function() {
             ctx.existingPosts.push($(this).attr('data-id'));
           });
           ctx.initScrapeFinished = true;
@@ -174,7 +250,7 @@ class JvcBot extends EventEmitter {
         return Promise.reject();
       });
     }
-    if (this.initScrapeFinished) {
+    if(this.initScrapeFinished) {
       this.retrievePost(this.options.topicURLWatcher, this.maxPage).then();
     }
 
@@ -205,7 +281,7 @@ class JvcBot extends EventEmitter {
     return request(options).then((resp) => {
       return resp;
     }).catch((error) => {
-      if (error.response) throw error;
+      if (error.response) throw error.response;
     });
   }
 
@@ -269,14 +345,15 @@ class JvcBot extends EventEmitter {
   }
 
   /**
-   * Send message on the watched topic, if fails put message in a queue
+   * Send message on the watched topic or topic id, if fails put message in a queue
    * @param  {String} message
+   * @param  {Integer} Topic ID
    * @return {Promise}
    */
-  sendMessage(message) {
+  sendMessage(message, topicID) {
     if (this.options.watchOnly) return Promise.reject('Watch mode scope activated. Please remove it.');
     if (!message) return Promise.reject('Need a message.');
-    const topicId = this.options.topicURLWatcher.split('-')[2];
+    const topicId = topicID || this.options.topicURLWatcher.split('-')[2];
     const ctx = this;
     return this.request(`forums/create_message.php?id_topic=${topicId}`, false, true).then((resp) => {
       if (resp) {

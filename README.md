@@ -14,6 +14,7 @@ npm install --save node-jeuxvideo-bot-api
 const JvcBot = require('node-jeuxvideo-bot-api');
 
 const bot = new JvcBot({
+  mode: 'topic',
   topicURLWatcher: 'http://www.jeuxvideo.com/forums/42-51-50527051-1-0-1-0-mode-la-dictature-de-la-moderation.htm',
   username: 'MYUSERNAME',
   password: 'MYPASSWORD'
@@ -42,9 +43,26 @@ bot.on('ready', () => {
   });
 });
 ```
+
+```js
+const JvcBot = require('node-jeuxvideo-bot-api');
+
+const bot = new JvcBot({
+  mode: 'forum',
+  forumURLWatcher: 'http://www.jeuxvideo.com/forums/0-51-0-1-0-1-0-blabla-18-25-ans.htm',
+  watchOnly: true
+});
+
+bot.on('ready', () => {
+  bot.on('topic', (topic) => {
+    console.log(topic);
+  });
+});
+```
 ## Options
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
+| mode | <code>String</code> | topic | forum to scrape forum and topic for scrape a topic
 | watchOnly | <code>Boolean</code> | False | True for only watch topics, False permits to post answer|
 | username | <code>String</code> | Empty | Credentials for JVC|
 | password | <code>String</code> | Empty | Credentials for JVC|
