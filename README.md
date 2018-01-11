@@ -67,6 +67,7 @@ bot.on('ready', () => {
 | username | <code>String</code> | Empty | Credentials for JVC|
 | password | <code>String</code> | Empty | Credentials for JVC|
 | topicURLWatcher | <code>String</code> | Empty | Topic url to be watched by bot|
+| forumURLWatcher | <code>String</code> | Empty | Forum url to be watched by bot|
 | delayBetweenScrap | <code>Integer</code> | Empty | Delay between scrape in ms|
 | loginFromCookie | <code>Object</code> | {} | Connection cookie coniunctio, loginFromCookie.coniunctio: 'value'
 ## License
