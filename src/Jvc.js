@@ -44,8 +44,7 @@ class JVC {
         } else {
           reject('[ERROR] Unknown error.');
         }
-      })
-        .catch((err) => {
+      }).catch((err) => {
           if (err) reject(err);
         });
     });
@@ -85,8 +84,7 @@ class JVC {
         } else {
           reject('[ERROR] Unknown error.');
         }
-      })
-        .catch((err) => {
+      }).catch((err) => {
           if (err) reject(err);
         });
     });
@@ -136,8 +134,7 @@ class JVC {
         } else {
           reject('[ERROR] Unknown error.');
         }
-      })
-        .catch((err) => {
+      }).catch((err) => {
           if (err) Promise.reject(err);
         });
     });
@@ -147,40 +144,45 @@ class JVC {
   * Send message to a given topic (needs auth)
   * @param  {String} - Message to send
   * @param  {String} - Topic URL or path
+  * @param  {Boolean} - Check topic id to avoid faulty topic id from url 
   * @return {Promise}
   */
-  sendMessage(message, topicUrl) {
+  sendMessage(message = '', topicUrl = '', fullCheck = false) {
     return new Promise((resolve, reject) => {
       topicUrl = this._convertURLToPath(topicUrl);
       if (topicUrl === null) reject('[ERROR] It\'s not a jvc forum url.');
       if (!this.logged) reject('[ERROR] You need to login in order to use sendMessage function.');
       if (!message || message.length === 0) reject('[ERROR] It need a message which is not empty.');
 
-      const topicId = this._convertTopicUrlToTopicID(topicUrl);
-      this._request(`forums/create_message.php?id_topic=${topicId}`, null, true).then((messagePage) => {
-        if (messagePage) {
-          const $ = cheerio.load(messagePage, { ignoreWhitespace: true });
-          const payload = {};
-          const inputs = $('.form-post-msg').find('input');
-          inputs.each(function () {
-            payload[$(this).attr('name')] = $(this).attr('value');
-          });
-          payload.message_topic = message;
-          this._request(`forums/create_message.php?id_topic=${topicId}`, payload, true).then((creationPage) => {
-            if (creationPage.indexOf(Constants.FAILED_CREATION_MESSAGE.AUTH) > -1
-                        || creationPage.indexOf(Constants.FAILED_CREATION_MESSAGE.CAPTCHA) > -1
-                        || creationPage.indexOf(Constants.FAILED_CREATION_MESSAGE.UNKNOWN_ERROR) > -1) {
-              reject('[ERROR] Post in the topic failed. Reason : maybe you are not connected or delay between two posts is too small ...');
+      this._convertTopicUrlToTopicID(topicUrl, fullCheck).then((topicId) => {
+        this._request(`forums/create_message.php?id_topic=${topicId}`, null, true).then((messagePage) => {
+          if (messagePage) {
+            const $ = cheerio.load(messagePage, { ignoreWhitespace: true });
+            if(!this._checkSameForumReferer(topicUrl, $('.lien-languette').first().attr('href'))) {
+              return this.sendMessage(message, topicUrl, true);
             }
-            resolve();
-          });
-        } else {
-          reject('[ERROR] Unknown error.');
-        }
-      })
-        .catch((err) => {
-          if (err) reject(err);
+            const payload = {};
+            const inputs = $('.form-post-msg').find('input');
+            inputs.each(function () {
+              payload[$(this).attr('name')] = $(this).attr('value');
+            });
+            payload.message_topic = message;
+            this._request(`forums/create_message.php?id_topic=${topicId}`, payload, true).then((creationPage) => {
+              if (creationPage.indexOf(Constants.FAILED_CREATION_MESSAGE.AUTH) > -1
+                  || creationPage.indexOf(Constants.FAILED_CREATION_MESSAGE.CAPTCHA) > -1
+                  || creationPage.indexOf(Constants.FAILED_CREATION_MESSAGE.UNKNOWN_ERROR) > -1
+                  || creationPage.indexOf(Constants.FAILED_CREATION_MESSAGE.LOCK) > -1) {
+                reject('[ERROR] Post in the topic failed. Reason : maybe you are not connected or delay between two posts is too small ...');
+              }
+              resolve();
+            });
+          } else {
+            reject('[ERROR] Unknown error.');
+          }
+        }).catch((err) => {
+            if (err) reject(err);
         });
+      });
     });
   }
 
@@ -197,19 +199,17 @@ class JVC {
           }
           ctx.logged = true;
           resolve();
-        })
-          .catch((err) => {
-            if (err) reject(err);
-          });
+        }).catch((err) => {
+          if (err) reject(err);
+        });
       }
       if (this.options.username && this.options.password) {
         this._request('accounts/login', { alias: this.options.username, password: this.options.password }, false, true).then(() => {
           ctx.logged = true;
           resolve();
-        })
-          .catch((err) => {
-            if (err) reject(err.body.message);
-          });
+        }).catch((err) => {
+          if (err) reject(err.body.message);
+        });
       }
     });
   }
@@ -258,12 +258,26 @@ class JVC {
     });
   }
 
-  _convertTopicUrlToTopicID(topicUrl = '') {
-    const topicID = Constants.TOPIC_PAGE_REGEX.exec(topicUrl);
-    if (topicID !== null || topicID.length !== 0) {
-      return parseInt(topicID[1]);
-    }
-    return null;
+  _convertTopicUrlToTopicID(topicUrl = '', fullCheck = false) {
+    return new Promise((resolve, reject) => {
+      if(!fullCheck) {
+        const topicID = Constants.TOPIC_PAGE_REGEX.exec(topicUrl);
+        if (topicID !== null || topicID.length !== 0) {
+          resolve(parseInt(topicID[1]));
+        }
+        reject(null);
+      } else {
+        this._request(topicUrl, null, true).then((topicPage) => {
+          if(topicPage) {
+            const $ = cheerio.load(topicPage, { ignoreWhitespace: true });
+            const urlAnswer = $('.a-menu-fofo').attr('href');
+            const explodedUrlAnswer = urlAnswer.split('=');
+            resolve(parseInt(explodedUrlAnswer[1]));
+          }
+          reject(null);
+        });
+      }
+    });
   }
 
   _convertURLToPath(url) {
@@ -279,6 +293,12 @@ class JVC {
     const explodedTopicURL = topicURL.split('-');
     explodedTopicURL[3] = Math.ceil(postCount / Constants.MAX_POSTS_PER_PAGE) + 1;
     return explodedTopicURL.join('-');
+  }
+
+  _checkSameForumReferer(topicUrl, forumUrl) {
+    const explodedTopicURL = topicUrl.split('-');
+    const explodedForumURL = forumUrl.split('-');
+    return explodedForumURL[1] === explodedTopicURL[1];
   }
 }
 

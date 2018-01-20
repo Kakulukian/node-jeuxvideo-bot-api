@@ -9,9 +9,10 @@ module.exports = {
   CHECK_LOGIN_PATH: '/forums/create_topic.php?id_forum=1',
   NOT_LOGGED_MESSAGE: 'Vous devez vous connecter pour créer un nouveau sujet',
   FAILED_CREATION_MESSAGE: {
-    CAPTCHA: 'Le captcha est incorrect',
+    CAPTCHA: 'Le captcha est invalide',
     UNKNOWN_ERROR: 'Une erreur est survenue',
-    AUTH: 'Vous devez vous connecter pour répondre au sujet'
+    AUTH: 'Vous devez vous connecter pour répondre au sujet',
+    LOCK: 'lecture seule'
   },
   LOGIN_PATH: '',
   WHITESPACE_REMOVER: / /g,
