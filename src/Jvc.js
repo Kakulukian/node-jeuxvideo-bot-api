@@ -233,7 +233,6 @@ class JVC {
     options.method = data ? 'POST' : 'GET';
     const baseUrl = forumApi ? Constants.BASE_API_JVC_FORUM_URL : (pureApi) ? Constants.BASE_API_JVC_URL : Constants.BASE_JVC_URL;
     options.url = baseUrl + path;
-    console.log(options.url)
     if (forumApi || !forumApi && !pureApi) options.form = data;
     if (pureApi) {
       const timestamp = moment(Date.now()).format('YYYY-MM-DD\THH:mm:ss+00:00');
@@ -270,7 +269,6 @@ class JVC {
   _convertURLToPath(url) {
     if (Constants.TOPIC_PAGE_REGEX.test(url)) return url;
     const splitter = Constants.COMMON_REGEX_FORUM_TRANSFORMER.exec(url);
-    console.log(splitter)
     if (splitter && splitter.length > 0) {
       return `forums/${splitter[1]}.htm`;
     }
