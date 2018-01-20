@@ -56,6 +56,7 @@ const bot = new JvcBot({
 bot.on('ready', () => {
   bot.on('topic', (topic) => {
     console.log(topic);
+    bot.sendMessage(`Hola ${topic.author}`, topic.id);
   });
 });
 ```
