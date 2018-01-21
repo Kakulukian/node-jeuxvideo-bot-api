@@ -1,4 +1,4 @@
-# Node.js Jeuxvideo.com Bot API
+# Node.js Jeuxvideo.com Forum API
 
 Node.js module to interact with unofficial Jeuxvideo.com Forum API. A jeuxvideo.com's account is needed, to post message on topic.
 
@@ -7,6 +7,12 @@ Node.js module to interact with unofficial Jeuxvideo.com Forum API. A jeuxvideo.
 ```bash
 npm install --save node-jeuxvideo-bot-api
 ```
+## Table of contents
+
+- [Cheat Sheet](#cheat-sheet)
+- [More Examples](#more-examples)
+- [Configuration](#configuration)
+- [Licence](#licence)
 
 ## Cheat Sheet
 
@@ -145,8 +151,10 @@ jvc.sendMessage('Blablabla','http://www.jeuxvideo.com/forums/42-3010442-53927408
 }).catch(console.err);
 ```
 
+## More examples
+To see more examples, click [here](https://github.com/Kakulukian/node-jeuxvideo-bot-api/blob/master/example/README.md)
 
-## Options
+## Configuration
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | username | <code>String</code> | Empty | Username credential for JVC|
