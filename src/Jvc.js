@@ -1,7 +1,6 @@
 const Promise = require('bluebird');
 const request = require('request-promise');
 const crypto = require('crypto');
-const moment = require('moment');
 const cheerio = require('cheerio');
 
 const Constants = require('./Constants');
@@ -228,7 +227,7 @@ class JVC {
 
     if (forumApi || !forumApi && !pureApi) options.form = data;
     if (pureApi) {
-      const timestamp = moment(Date.now()).format('YYYY-MM-DD\THH:mm:ss+00:00');
+      const timestamp = new Date(Date.now()).toISOString();
       const method = data ? 'POST' : 'GET';
       let signature = `550c04bf5cb2b\n${timestamp}\n${method}\napi.jeuxvideo.com\n/v4/${path}\n`;
       const salt = 'd84e9e5f191ea4ffc39c22d11c77dd6c';

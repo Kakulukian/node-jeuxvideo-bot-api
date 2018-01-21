@@ -10,7 +10,7 @@ const jvc = new Jvc({
 jvc.login().then(() => {
   jvc.getTopicsFromForum(process.argv[4]).then((topics) => {
     let i = 0;
-    for(let topic of topics) {
+    for(let topic of topics.topics) {
       if(!topic.pinned) {
         setTimeout(() => {
           console.log(`**** Send message on ${topic.subject} by ${topic.author} ****`);
