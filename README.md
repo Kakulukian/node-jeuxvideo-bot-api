@@ -92,7 +92,7 @@ jvc.getTopicsFromForum('http://www.jeuxvideo.com/forums/0-3010442-0-1-0-1-0-foot
 }).catch(console.err);
 ```
 
-### Get topics from forum url
+### Search topics from forum url with a keyword and a mode 0 => title, 1 => author and 2 => message
 ```js
 jvc.getTopicsFromForumSearch('http://www.jeuxvideo.com/forums/0-3010442-0-1-0-1-0-football-manager-2018.htm', 'game', 0).then((topics) => {
   console.log(topics);

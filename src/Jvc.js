@@ -42,8 +42,13 @@ class JVC {
           reject('[ERROR] Unknown error.');
         }
       }).catch((err) => {
-          if (err) reject(err);
-        });
+        if(err) {
+          if(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]) {
+            reject(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]);
+          }
+          reject(err);
+        }
+      });
     });
   }
 
@@ -60,7 +65,12 @@ class JVC {
       this._parseTopicFromForumPage(forumUrl).then((topics) => {
         resolve(topics)
       }).catch((err) => {
-        if(err) reject(err);
+        if(err) {
+          if(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]) {
+            reject(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]);
+          }
+          reject(err);
+        }
       });
     });
   }
@@ -78,11 +88,18 @@ class JVC {
       if (forumUrl === null) reject('[ERROR] It\'s not a jvc forum url.');
       if(mode > Constants.SEARCH_FORUM_MODE.length || mode < 0) reject('[ERROR] Mode choosed incorrect.');
 
-      const forumSearchUrl = `${Constants.SEARCH_FORUM_PREFIX}${forumUrl}?search_in_forum=${keyword}&type_search_in_forum=${Constants.SEARCH_FORUM_MODE[mode]}`;
+      let forumSearchUrl = `${Constants.SEARCH_FORUM_PREFIX}${forumUrl}?search_in_forum=${keyword}&type_search_in_forum=${Constants.SEARCH_FORUM_MODE[mode]}`;
+      if(forumUrl.indexOf(Constants.SEARCH_FORUM_PREFIX) > -1) forumSearchUrl = forumUrl.substring(1, forumUrl.length);
+
       this._parseTopicFromForumPage(forumSearchUrl).then((topics) => {
         resolve(topics)
       }).catch((err) => {
-        if(err) reject(err);
+        if(err) {
+          if(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]) {
+            reject(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]);
+          }
+          reject(err);
+        }
       });
     });
   }
@@ -121,7 +138,12 @@ class JVC {
           reject('[ERROR] Unknown error.');
         }
       }).catch((err) => {
-          if (err) Promise.reject(err);
+        if(err) {
+          if(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]) {
+            reject(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]);
+          }
+          reject(err);
+        }
       });
     });
   }
@@ -166,7 +188,12 @@ class JVC {
             reject('[ERROR] Unknown error.');
           }
         }).catch((err) => {
-            if (err) reject(err);
+          if(err) {
+            if(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]) {
+              reject(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]);
+            }
+            reject(err);
+          }
         });
       });
     });
@@ -191,7 +218,12 @@ class JVC {
           ctx.logged = true;
           resolve();
         }).catch((err) => {
-          if (err) reject(err);
+          if(err) {
+            if(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]) {
+              reject(Constants.STATUS_CODE_ERROR_MESSAGE[err.statusCode]);
+            }
+            reject(err);
+          }
         });
       }
       if (this.options.username && this.options.password) {
@@ -315,6 +347,8 @@ class JVC {
 
   _convertURLToPath(url) {
     if (Constants.TOPIC_PAGE_REGEX.test(url)) return url;
+    if (Constants.RESEARCH_PAGE_REGEX.test(url)) return url;
+
     const splitter = Constants.COMMON_REGEX_FORUM_TRANSFORMER.exec(url);
     if (splitter && splitter.length > 0) {
       return `forums/${splitter[1]}.htm`;
