@@ -15,9 +15,7 @@ class JVC {
     this.options.loginFromCookie = options.loginFromCookie || {};
     this.cookieJar = request.jar();
     this.logged = false;
-    if (this.options.username.length > 0 && this.options.password.length > 0 || this.options.loginFromCookie.coniunctio) {
-      this._login().then();
-    }
+
   }
 
   /**
@@ -59,34 +57,34 @@ class JVC {
     return new Promise((resolve, reject) => {
       forumUrl = this._convertURLToPath(forumUrl);
       if (forumUrl === null) reject('[ERROR] It\'s not a jvc forum url.');
-      this._request(forumUrl).then((topicsPage) => {
-        if (topicsPage) {
-          const $ = cheerio.load(topicsPage, { ignoreWhitespace: true });
-          const topicList = [];
-          $(Constants.TOPICS_LIST_SELECTOR.ALL).each((i, elt) => {
-            elt = $(elt);
-            const subject = elt.find(Constants.TOPICS_LIST_SELECTOR.SUBJECT);
-            const count = parseInt(elt.find(Constants.TOPICS_LIST_SELECTOR.COUNT).text());
-            const firstPageUrl = subject.attr('href');
-            const lastPageUrl = this._createMaxPageURL(firstPageUrl, count);
-            topicList.push({
-              id: elt.attr('data-id'),
-              subject: subject.attr('title'),
-              count,
-              author: elt.find(Constants.TOPICS_LIST_SELECTOR.AUTHOR).text().replace(Constants.WHITESPACE_REMOVER, ''),
-              pinned: Constants.TOPICS_LIST_COMPARATOR.PINNED.test(elt.find(Constants.TOPICS_LIST_SELECTOR.PINNED).attr('src')),
-              lastUpdate: elt.find(Constants.TOPICS_LIST_SELECTOR.LAST_UPDATE).text().replace(Constants.WHITESPACE_REMOVER, ''),
-              firstPageUrl,
-              lastPageUrl
-            });
-          });
-          resolve(topicList);
-        } else {
-          reject('[ERROR] Unknown error.');
-        }
+
+      this._parseTopicFromForumPage(forumUrl).then((topics) => {
+        resolve(topics)
       }).catch((err) => {
-          if (err) reject(err);
-        });
+        if(err) reject(err);
+      });
+    });
+  }
+
+    /**
+  * Get posts from a given topic
+  * @param  {String} - URL or path to a jvc forum
+  * @param  {String} - Keyword to search
+  * @param  {Integer} - Search mode : 0 => topic, 1 => author, 2 => message
+  * @return {Promise}
+  */
+  getTopicsFromForumSearch(forumUrl = '', keyword = '', mode = 0) {
+    return new Promise((resolve, reject) => {
+      forumUrl = this._convertURLToPath(forumUrl);
+      if (forumUrl === null) reject('[ERROR] It\'s not a jvc forum url.');
+      if(mode > Constants.SEARCH_FORUM_MODE.length || mode < 0) reject('[ERROR] Mode choosed incorrect.');
+
+      const forumSearchUrl = `${Constants.SEARCH_FORUM_PREFIX}${forumUrl}?search_in_forum=${keyword}&type_search_in_forum=${Constants.SEARCH_FORUM_MODE[mode]}`;
+      this._parseTopicFromForumPage(forumSearchUrl).then((topics) => {
+        resolve(topics)
+      }).catch((err) => {
+        if(err) reject(err);
+      });
     });
   }
 
@@ -108,19 +106,8 @@ class JVC {
             previous: '',
             next: ''
           };
-          const pagination = {
-            previous: $(Constants.POSTS_LIST_SELECTOR.PAGE.CURRENT).first().prev().find(Constants.POSTS_LIST_SELECTOR.PAGE.LINK)
-              .attr('href'),
-            next: $(Constants.POSTS_LIST_SELECTOR.PAGE.CURRENT).first().next().find(Constants.POSTS_LIST_SELECTOR.PAGE.LINK)
-              .attr('href')
-          };
-          if (pagination.previous) {
-            topic.previous = pagination.previous;
-          }
-          if (pagination.next) {
-            topic.next = pagination.next;
-          }
-
+          topic.next = this._decryptJVCare($(Constants.POSTS_LIST_SELECTOR.PAGE.NEXT).first());
+          topic.previous = this._decryptJVCare($(Constants.POSTS_LIST_SELECTOR.PAGE.PREVIOUS).first());
           $(Constants.POSTS_LIST_SELECTOR.POST.ALL).each((i, elt) => {
             elt = $(elt);
             topic.posts.push({
@@ -186,7 +173,11 @@ class JVC {
     });
   }
 
-  _login() {
+  /**
+  * Login account
+  * @return {Promise}
+  */
+  login() {
     return new Promise((resolve, reject) => {
       const ctx = this;
       if (this.options.loginFromCookie.coniunctio) {
@@ -204,7 +195,7 @@ class JVC {
         });
       }
       if (this.options.username && this.options.password) {
-        this._request('accounts/login', { alias: this.options.username, password: this.options.password }, false, true).then(() => {
+        this._request('accounts/login', { alias: this.options.username, password: this.options.password }, false, true).then((a) => {
           ctx.logged = true;
           resolve();
         }).catch((err) => {
@@ -233,6 +224,7 @@ class JVC {
     options.method = data ? 'POST' : 'GET';
     const baseUrl = forumApi ? Constants.BASE_API_JVC_FORUM_URL : (pureApi) ? Constants.BASE_API_JVC_URL : Constants.BASE_JVC_URL;
     options.url = baseUrl + path;
+
     if (forumApi || !forumApi && !pureApi) options.form = data;
     if (pureApi) {
       const timestamp = moment(Date.now()).format('YYYY-MM-DD\THH:mm:ss+00:00');
@@ -255,6 +247,47 @@ class JVC {
       }).catch((error) => {
         if (error.response) reject(error.response);
       });
+    });
+  }
+
+  _parseTopicFromForumPage(forumUrl) {
+    return new Promise((resolve, reject) => {
+      this._request(forumUrl).then((topicsPage) => {
+        if (topicsPage) {
+          const topicList = {
+            topics: [],
+            next: '',
+            previous: ''
+          };
+          if(topicsPage.indexOf(Constants.TOPICS_LIST_COMPARATOR.FAILED_SEARCH) > -1) resolve(topicList);
+
+          const $ = cheerio.load(topicsPage, { ignoreWhitespace: true });
+          topicList.next = this._decryptJVCare($(Constants.TOPICS_LIST_SELECTOR.PAGE.NEXT).first());
+          topicList.previous = this._decryptJVCare($(Constants.TOPICS_LIST_SELECTOR.PAGE.PREVIOUS).first());
+          $(Constants.TOPICS_LIST_SELECTOR.TOPIC.ALL).each((i, elt) => {
+            elt = $(elt);
+            const subject = elt.find(Constants.TOPICS_LIST_SELECTOR.TOPIC.SUBJECT);
+            const count = parseInt(elt.find(Constants.TOPICS_LIST_SELECTOR.TOPIC.COUNT).text());
+            const firstPageUrl = subject.attr('href');
+            const lastPageUrl = this._createMaxPageURL(firstPageUrl, count);
+            topicList.topics.push({
+              id: elt.attr('data-id'),
+              subject: subject.attr('title'),
+              count,
+              author: elt.find(Constants.TOPICS_LIST_SELECTOR.TOPIC.AUTHOR).text().replace(Constants.WHITESPACE_REMOVER, ''),
+              pinned: Constants.TOPICS_LIST_COMPARATOR.PINNED.test(elt.find(Constants.TOPICS_LIST_SELECTOR.TOPIC.PINNED).attr('src')),
+              lastUpdate: elt.find(Constants.TOPICS_LIST_SELECTOR.TOPIC.LAST_UPDATE).text().replace(Constants.WHITESPACE_REMOVER, ''),
+              firstPageUrl,
+              lastPageUrl
+            });
+          });
+          resolve(topicList);
+        } else {
+          reject('[ERROR] Unknown error.');
+        }
+      }).catch((err) => {
+          if (err) reject(err);
+      })
     });
   }
 
@@ -291,7 +324,7 @@ class JVC {
 
   _createMaxPageURL(topicURL, postCount) {
     const explodedTopicURL = topicURL.split('-');
-    explodedTopicURL[3] = Math.ceil(postCount / Constants.MAX_POSTS_PER_PAGE) + 1;
+    explodedTopicURL[3] = Math.ceil(postCount / Constants.MAX_POSTS_PER_PAGE);
     return explodedTopicURL.join('-');
   }
 
@@ -300,6 +333,23 @@ class JVC {
     const explodedForumURL = forumUrl.split('-');
     return explodedForumURL[1] === explodedTopicURL[1];
   }
+
+  _decryptJVCare(JVCareNode) {
+    if(!JVCareNode || !JVCareNode.attr('class')) return '';
+    const explodedClassNode = JVCareNode.attr('class').split(' ');
+    let s = '';
+    if(explodedClassNode.length > 1) {
+      s = explodedClassNode[1];
+    } else {
+      return JVCareNode.attr('href');
+    }
+    const base16 = '0A12B34C56D78E9F';
+    let link = '';
+    for (var i = 0; i < s.length; i += 2) {
+      link += String.fromCharCode(base16.indexOf(s.charAt(i)) * 16 + base16.indexOf(s.charAt(i + 1)));
+    }
+    return link;
+  } 
 }
 
 module.exports = JVC;

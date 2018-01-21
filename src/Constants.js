@@ -17,20 +17,27 @@ module.exports = {
   LOGIN_PATH: '',
   WHITESPACE_REMOVER: / /g,
   TOPICS_LIST_SELECTOR: {
-    ALL: 'li[data-id][class=""]',
-    PINNED: 'img.topic-img',
-    SUBJECT: '.lien-jv.topic-title',
-    COUNT: '.topic-count',
-    AUTHOR: '.topic-author',
-    LAST_UPDATE: '.topic-date'
+    PAGE: {
+      NEXT: '.pagi-suivant-actif',
+      PREVIOUS: '.pagi-precedent-actif'
+    },
+    TOPIC: {
+      ALL: 'li[data-id][class=""]',
+      PINNED: 'img.topic-img',
+      SUBJECT: '.lien-jv.topic-title',
+      COUNT: '.topic-count',
+      AUTHOR: '.topic-author',
+      LAST_UPDATE: '.topic-date'
+    }
   },
   TOPICS_LIST_COMPARATOR: {
-    PINNED: RegExp('marque')  
+    PINNED: RegExp('marque'),
+    FAILED_SEARCH: 'Aucune réponse pour votre recherche'
   },
   POSTS_LIST_SELECTOR: {
     PAGE: {
-      LINK: '.lien-jv',
-      CURRENT: '.page-active'
+      NEXT: '.pagi-suivant-actif',
+      PREVIOUS: '.pagi-precedent-actif'
     },
     POST: {
       ALL: '.bloc-message-forum',
@@ -38,5 +45,8 @@ module.exports = {
       AUTHOR: '.user-avatar-msg',
       CREATED_DATE: '.bloc-date-msg'
     }
-  }
+  },
+  SEARCH_FORUM_PREFIX: 'recherche/',
+  SEARCH_FORUM_MODE: ['titre_topic', 'auteur_topic', 'texte_message']
+  
 };
