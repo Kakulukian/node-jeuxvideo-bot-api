@@ -66,7 +66,7 @@ class JVC {
     });
   }
 
-    /**
+  /**
   * Get posts from a given topic
   * @param  {String} - URL or path to a jvc forum
   * @param  {String} - Keyword to search
@@ -123,7 +123,7 @@ class JVC {
         }
       }).catch((err) => {
           if (err) Promise.reject(err);
-        });
+      });
     });
   }
 
@@ -179,6 +179,7 @@ class JVC {
   */
   login() {
     return new Promise((resolve, reject) => {
+      if(this.logged) resolve();
       const ctx = this;
       if (this.options.loginFromCookie.coniunctio) {
         const loginCookie = request.cookie(`coniunctio=${this.options.loginFromCookie.coniunctio}`);
