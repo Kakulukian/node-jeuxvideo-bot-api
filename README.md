@@ -1,74 +1,164 @@
-# Node.js Jeuxvideo.com Bot API
+# Node.js Jeuxvideo.com Forum API
 
-Node.js module to interact with unofficial Jeuxvideo.com Bot API. A jeuxvideo.com's account is needed, to obtain one, go on jeuxvideo.com.
+Node.js module to interact with unofficial Jeuxvideo.com Forum API. A jeuxvideo.com's account is needed, to post message on topic.
 
 ## Install
 
 ```bash
 npm install --save node-jeuxvideo-bot-api
 ```
+## Table of contents
 
-## Usage
+- [Cheat Sheet](#cheat-sheet)
+- [More Examples](#more-examples)
+- [Configuration](#configuration)
+- [Licence](#licence)
+
+## Cheat Sheet
 
 ```js
-const JvcBot = require('node-jeuxvideo-bot-api');
+const Jvc = require('node-jeuxvideo-bot-api');
+```
 
-const bot = new JvcBot({
-  mode: 'topic',
-  topicURLWatcher: 'http://www.jeuxvideo.com/forums/42-51-50527051-1-0-1-0-mode-la-dictature-de-la-moderation.htm',
+### Authentification on JVC by credentials
+```js
+const jvc = new Jvc({
   username: 'MYUSERNAME',
   password: 'MYPASSWORD'
 });
 
-bot.on('ready', () => {
-  bot.on('message', (msg) => {
-    bot.sendMessage(`Hello ${msg.author} !`);
-  });
-});
+jvc.login().then( () => {
+  // do stuff
+}).catch(console.err);
 ```
 
+### Authentification on JVC by cookie
 ```js
-const JvcBot = require('node-jeuxvideo-bot-api');
-
-const bot = new JvcBot({
-  topicURLWatcher: 'http://www.jeuxvideo.com/forums/42-51-50527051-1-0-1-0-mode-la-dictature-de-la-moderation.htm',
-  loginFromCookie: {
-    coniunctio: 'myCookieValue'
+const jvc = new Jvc({
+  loginFromCookies: {
+    coniunctio: 'Coniunctio cookie value'
   }
 });
 
-bot.on('ready', () => {
-  bot.on('message', (msg) => {
-    bot.sendMessage(`Hello ${msg.author} !`);
-  });
-});
+jvc.login().then( () => {
+  // do stuff
+}).catch(console.err);
 ```
 
+### Get common forums list
 ```js
-const JvcBot = require('node-jeuxvideo-bot-api');
-
-const bot = new JvcBot({
-  mode: 'forum',
-  forumURLWatcher: 'http://www.jeuxvideo.com/forums/0-51-0-1-0-1-0-blabla-18-25-ans.htm',
-  watchOnly: true
-});
-
-bot.on('ready', () => {
-  bot.on('topic', (topic) => {
-    console.log(topic);
-  });
-});
+jvc.getForumsList().then((forums) => {
+  console.log(forums);
+  /**
+  * Displays
+  * [
+  *   {
+  *     forumName: 'xxxx',
+  *     forumUrl: 'xxxx'
+  *   },
+  *   {
+  *     forumName: 'xxxx',
+  *     forumUrl: 'xxxx'
+  *   }
+  * ]
+  **/ 
+}).catch(console.err);
 ```
-## Options
+
+### Get topics from forum url
+```js
+jvc.getTopicsFromForum('http://www.jeuxvideo.com/forums/0-3010442-0-1-0-1-0-football-manager-2018.htm').then((topics) => {
+  console.log(topics);
+  /**
+  * Displays
+  * {
+  *   topics: [
+  *     {
+  *       id: '54842501'
+  *       subject: 'Blabla'
+  *       count: 12
+  *       author: 'Blabla'
+  *       pinned: false
+  *       lastUpdate: '20/01/18'
+  *       firstPageUrl: '/forums/xxxx.html'
+  *       lastPageUrl: '/forums/xxxx.html'
+  *     },
+  *     ...
+  *   ],
+  *   next: '/forums/0-3010442-0-1-0-26-0-football-manager-2018.htm',
+  *   previous: ''
+  * }
+  **/ 
+}).catch(console.err);
+```
+
+### Get topics from forum url
+```js
+jvc.getTopicsFromForumSearch('http://www.jeuxvideo.com/forums/0-3010442-0-1-0-1-0-football-manager-2018.htm', 'game', 0).then((topics) => {
+  console.log(topics);
+  /**
+  * Displays
+  * {
+  *   topics: [
+  *     {
+  *       id: '54842501'
+  *       subject: 'gane ddfdf'
+  *       count: 12
+  *       author: 'Blabla'
+  *       pinned: false
+  *       lastUpdate: '20/01/18'
+  *       firstPageUrl: '/forums/xxxx.html'
+  *       lastPageUrl: '/forums/xxxx.html'
+  *     },
+  *     ...
+  *   ],
+  *   next: '/recherche/forums/0-3010442-0-1-0-26-0-football-manager-2018.htm',
+  *   previous: ''
+  * }
+  **/ 
+}).catch(console.err);
+```
+
+### Get posts from topic url
+```js
+jvc.getPostsFromTopic('http://www.jeuxvideo.com/forums/42-3010442-53927408-1-0-1-0-topic-de-moderation.htm').then((posts) => {
+  console.log(posts);
+  /**
+  * Displays
+  * {
+  *   posts: [
+  *     {
+  *       id: '54842501'
+  *       author: 'Blabla'
+  *       pinned: false
+  *       createdDate: '20 janvier 2018 à 21:01:01'
+  *       content: 'Blabla blabla'
+  *     },
+  *     ...
+  *   ],
+  *   next: '/forums/42-3010442-53927408-2-0-1-0-topic-de-moderation.htm',
+  *   previous: ''
+  * }
+  **/ 
+}).catch(console.err);
+```
+
+
+### Send message on topic url
+```js
+jvc.sendMessage('Blablabla','http://www.jeuxvideo.com/forums/42-3010442-53927408-1-0-1-0-topic-de-moderation.htm').then(() => {
+  //do stuff
+}).catch(console.err);
+```
+
+## More examples
+To see more examples, click [here](https://github.com/Kakulukian/node-jeuxvideo-bot-api/blob/master/example/README.md)
+
+## Configuration
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| mode | <code>String</code> | topic | forum to scrape forum and topic for scrape a topic
-| watchOnly | <code>Boolean</code> | False | True for only watch topics, False permits to post answer|
-| username | <code>String</code> | Empty | Credentials for JVC|
-| password | <code>String</code> | Empty | Credentials for JVC|
-| topicURLWatcher | <code>String</code> | Empty | Topic url to be watched by bot|
-| forumURLWatcher | <code>String</code> | Empty | Forum url to be watched by bot|
-| delayBetweenScrap | <code>Integer</code> | Empty | Delay between scrape in ms|
+| username | <code>String</code> | Empty | Username credential for JVC|
+| password | <code>String</code> | Empty | Password credential for JVC|
 | loginFromCookie | <code>Object</code> | {} | Connection cookie coniunctio, loginFromCookie.coniunctio: 'value'
 ## License
 
